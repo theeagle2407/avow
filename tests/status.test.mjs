@@ -8,6 +8,7 @@ const input = {
   decision: { value: 2, codeMatches: true, evidenceHash: PUBLIC_PROOF.evidenceHash, evaluatedAt: 1793287020n },
   decisionCount: 3n,
   receipt: { status: 'success', blockNumber: 12020350n, forwarderResult: true },
+  escrow: { funded: true, released: false, decision: 2, canSettle: false, heldBalanceWei: PUBLIC_PROOF.escrowAmountWei },
 }
 
 test('assembles a canonical blocked renewal from independent proof', () => {
@@ -25,4 +26,10 @@ test('fails closed when the evidence hash differs', () => {
 
 test('rejects evidence without verified delivery', () => {
   assert.throws(() => assembleStatus({ ...input, evidence: { ...input.evidence, source: { ...input.evidence.source, verifiedDelivery: false } } }), /not verified/)
+})
+
+test('fails closed if blocked funds become settleable', () => {
+  const status = assembleStatus({ ...input, escrow: { ...input.escrow, canSettle: true } })
+  assert.equal(status.canonical, false)
+  assert.equal(status.decision, 'UNVERIFIED')
 })
