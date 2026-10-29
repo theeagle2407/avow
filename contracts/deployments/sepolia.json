@@ -1,0 +1,10 @@
+{
+  "network": "ethereum-testnet-sepolia",
+  "chainId": 11155111,
+  "contract": "0x904f247794a68f83ec90f441718b88f67d99e98c",
+  "mockForwarder": "0x15fC6ae953E024d975e77382eEeC56A9101f9F88",
+  "deployer": "0xB37b46F58cd7E384DbD051332EB0c6e110E3Ed7C",
+  "subscriptionId": "0xe5a039743be8990b819cdac1fd77d9995650dab227b265f161fce7a54369ee5d",
+  "deploymentTransaction": "0xc6d7328c5a98399288dd29c8e0d1c45e4eeec130abf54589fbc42f9a4f2f6d20",
+  "renewalTransaction": "0x27528c01da8c8cb81cbe9ed9530816f1f2e2c93660ed2eb39558a8768660a681"
+}
