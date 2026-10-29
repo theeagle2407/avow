@@ -1,0 +1,15 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+.DS_Store
+
+.vercel
+
+.avow-admin-secret
+.env
+.env.*
+
+# CRE generated build output
+renewal-verifier/.cre_build_tmp.js
