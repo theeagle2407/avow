@@ -1,0 +1,21 @@
+{
+  "schema": "avow.escrow.v2",
+  "network": "ethereum-testnet-sepolia",
+  "escrow": "0x762c2d0a1569e14fa751a860580cabce8264cd9b",
+  "receiver": "0x904f247794a68f83ec90f441718b88f67d99e98c",
+  "subscriptionId": "0xe5a039743be8990b819cdac1fd77d9995650dab227b265f161fce7a54369ee5d",
+  "amountWei": "100000000000000",
+  "amountEth": "0.0001",
+  "maxDecisionAgeSeconds": "86400",
+  "decision": "BLOCK",
+  "canSettle": false,
+  "customerStateCurrent": true,
+  "decisionFresh": true,
+  "heldBalanceWei": "100000000000000",
+  "settlementBlocked": true,
+  "verificationBlock": "12021918",
+  "deploymentTransaction": "0xe19db82fa92d7874ee653ba69510763bcee0268cfaacf94596451a0133ca8ce8",
+  "fundingTransaction": "0x2aad77eb1646631c30dc761b98daa71eca7bdbf8ce458cd5df3126452403bda5",
+  "transactionsSent": 2,
+  "disclosure": "Sepolia ETH test escrow V2. No production funds or stablecoins were used."
+}

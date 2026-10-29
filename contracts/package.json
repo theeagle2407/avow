@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "compile": "node scripts/compile.mjs",
-    "deploy:sepolia": "node --env-file=.env scripts/deploy-sepolia.mjs"
+    "compile:escrow-v2": "node scripts/compile-escrow-v2.mjs",
+    "test:escrow-v2": "node --test tests/escrow-v2.test.mjs",
+    "deploy:sepolia": "node --env-file=.env scripts/deploy-sepolia.mjs",
+    "deploy:escrow-v2": "node --env-file=.env scripts/deploy-escrow-v2-sepolia.mjs"
   },
   "dependencies": {
     "solc": "0.8.30",
