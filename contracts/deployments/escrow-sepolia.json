@@ -1,0 +1,18 @@
+{
+  "network": "ethereum-testnet-sepolia",
+  "escrow": "0x1fb94339c5bdbbbbf608b5c7457fc811932682b0",
+  "receiver": "0x904f247794a68f83ec90f441718b88f67d99e98c",
+  "subscriptionId": "0xe5a039743be8990b819cdac1fd77d9995650dab227b265f161fce7a54369ee5d",
+  "amountWei": "100000000000000",
+  "amountEth": "0.0001",
+  "decision": "BLOCK",
+  "canSettle": false,
+  "heldBalanceWei": "100000000000000",
+  "settlementBlocked": true,
+  "deploymentTransaction": "0x6ca03168702ee5c52c9e6444ad0c4bb86c707d2864414274f81be64fd0d6bd9d",
+  "fundingTransaction": "0x539ed2f88f8914fa073ac05c6d8a6de51400a3506b030e00398b8283ad294d22",
+  "transactionsSent": 2,
+  "disclosure": "Sepolia ETH test escrow. No production funds or stablecoins were used.",
+  "verificationBlock": "12020449",
+  "rpcConsistencyNote": "The first fallback-provider read was stale. A read at the confirmed funding block and at latest independently verified the complete escrow balance."
+}
