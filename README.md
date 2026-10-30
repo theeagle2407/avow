@@ -1,65 +1,106 @@
 # Avow
 
-### Every renewal earns a yes.
+## Recurring payments should prove permission.
 
-[Live application](https://avow-lime.vercel.app) · [Canonical CRE transaction](https://sepolia.etherscan.io/tx/0x2b11599ad5c75d5732dba55eeb69dd9c60691e12dc54d85ceba754ee804b349b) · [Funded enforcement escrow V2](https://sepolia.etherscan.io/address/0x762c2d0a1569e14fa751a860580cabce8264cd9b)
+[Live product](https://avow-lime.vercel.app) · [Verified CRE transaction](https://sepolia.etherscan.io/tx/0x2b11599ad5c75d5732dba55eeb69dd9c60691e12dc54d85ceba754ee804b349b) · [Funded enforcement escrow](https://sepolia.etherscan.io/address/0x762c2d0a1569e14fa751a860580cabce8264cd9b)
 
-Avow is a verifiable control layer for recurring payments. It combines provider-backed notice evidence, customer state held onchain, a deterministic policy executed through Chainlink CRE, an append-only decision receipt, and an escrow that refuses settlement unless the latest decision authorizes it.
+Avow is an open-source verification and enforcement layer for recurring payments. Before a renewal settles, Avow verifies provider-backed notice, exact-price consent and current customer state. A Chainlink CRE workflow evaluates the configured policy, records `EXECUTE` or `BLOCK` onchain, and a settlement contract enforces the result.
 
-The live demonstration evaluates a Northstar Cloud renewal from **$19 to $29**. Resend reports that the notice was delivered, but the customer has not approved the exact new amount. Avow records `BLOCK / FRESH_APPROVAL_REQUIRED`, and a funded Sepolia escrow remains unable to release.
+The reference implementation proves one complete path on Ethereum Sepolia: a renewal increases from **$19 to $29**, delivery is verified, exact-price approval is missing, CRE records `BLOCK / FRESH_APPROVAL_REQUIRED`, and a funded escrow refuses to release.
 
-> Avow is a legal-technology prototype, not legal advice or a production payment processor. The configured policy is an internal demonstration control, not a claim that one rule applies in every jurisdiction or contract.
+> Avow is a legal-technology reference implementation—not legal advice, an audited payment processor or a claim that one policy applies to every contract or jurisdiction.
 
-## The complete proof
+## Why Avow exists
 
-| Layer | Live result | Evidence |
+Recurring-payment systems usually separate compliance evidence from payment execution. A platform may send a notice, store consent somewhere else, and still rely on its own billing service to decide whether funds move. That creates an avoidable trust gap: the system making the charge is also the system asserting that the charge is permitted.
+
+Avow closes that gap by turning independently verifiable evidence into a settlement condition.
+
+| Without Avow | With Avow |
+| --- | --- |
+| Evidence and settlement are separate | Evidence determines whether settlement is available |
+| The merchant can self-assert that notice was sent | Delivery is checked against a provider record |
+| A stale decision may ignore later customer action | Escrow V2 requires current customer state and a fresh decision |
+| Compliance review happens after funds move | The control runs before release |
+
+## The verified reference proof
+
+| Layer | Verified result | Public evidence |
 | --- | --- | --- |
-| Renewal state | $19 → $29; no approval recorded | [Decision receiver](https://sepolia.etherscan.io/address/0x904f247794a68f83ec90f441718b88f67d99e98c) |
-| Delivery evidence | Resend reports delivery | Provider record is retrieved by the live evidence API |
-| CRE decision | `BLOCK` | [Broadcast transaction](https://sepolia.etherscan.io/tx/0x2b11599ad5c75d5732dba55eeb69dd9c60691e12dc54d85ceba754ee804b349b) |
-| Evidence commitment | `0xfe4f…9e86` | Stored in the append-only decision receipt |
-| Enforcement | 0.0001 Sepolia ETH held; settlement unavailable | [Escrow V2](https://sepolia.etherscan.io/address/0x762c2d0a1569e14fa751a860580cabce8264cd9b) |
+| Renewal state | $19 → $29; exact-price approval absent | [Decision receiver](https://sepolia.etherscan.io/address/0x904f247794a68f83ec90f441718b88f67d99e98c) |
+| External evidence | Resend reports notice delivery | Retrieved and validated by the evidence service |
+| CRE evaluation | `BLOCK / FRESH_APPROVAL_REQUIRED` | [Broadcast transaction](https://sepolia.etherscan.io/tx/0x2b11599ad5c75d5732dba55eeb69dd9c60691e12dc54d85ceba754ee804b349b) |
+| Evidence commitment | `0xfe4f340c…9e86` | Stored in the append-only decision receipt |
+| Enforcement | 0.0001 Sepolia ETH remains held | [Escrow V2](https://sepolia.etherscan.io/address/0x762c2d0a1569e14fa751a860580cabce8264cd9b) |
 
-The public application independently reads these records through `/api/status`. It returns `canonical: true` only when the provider evidence, CRE receipt, decision code, transaction, and funded escrow state agree. Any mismatch fails closed.
+The live application reads the proof through [`/api/status`](https://avow-lime.vercel.app/api/status). It reports `canonical: true` only when the provider evidence, CRE receipt, decision, transaction and funded escrow state agree. A mismatch fails closed.
+
+### Verify it in under one minute
+
+1. Open the [live product](https://avow-lime.vercel.app).
+2. Select **Verified demo**.
+3. Choose **Inspect live proof**.
+4. Review the provider evidence, CRE receipt and funded escrow.
+5. Open the Etherscan links to inspect the transaction and contract independently.
+
+The demo is one fixed, disclosed test renewal. It is not visitor data and does not pretend to be a public customer account.
 
 ## Why Chainlink CRE is essential
 
-CRE is Avow's orchestration and decision layer. The workflow:
+CRE is not a decorative integration. It is the orchestration and evaluation layer that connects external evidence to enforceable onchain state.
 
-1. reads the proposed renewal and customer state from Ethereum Sepolia;
-2. retrieves the external Resend delivery record through consensus HTTP;
-3. verifies that the onchain and offchain records refer to the same subscription;
-4. applies the configured renewal control deterministically;
-5. hashes the combined evidence;
-6. signs and writes the decision through the Chainlink forwarder; and
-7. returns a machine-readable decision receipt.
+The workflow:
 
-Removing CRE would remove the verifiable bridge between external evidence and enforceable onchain settlement.
+1. reads the proposed renewal and customer-state version from Sepolia;
+2. retrieves external notice evidence through consensus HTTP;
+3. checks that the onchain and offchain records refer to the same subscription;
+4. validates delivery, notice timing, cancellation and exact-price approval;
+5. produces a deterministic `EXECUTE` or `BLOCK` result;
+6. commits the combined evidence with a hash; and
+7. writes the signed report through the Chainlink forwarder.
 
-### Files that use Chainlink
+Without CRE, Avow loses the verifiable bridge between provider evidence and onchain settlement.
 
-| File | Purpose |
+| Chainlink integration file | Responsibility |
 | --- | --- |
-| [`renewal-verifier/main.ts`](renewal-verifier/main.ts) | CRE cron trigger, EVM read, consensus HTTP request, policy execution, signed report write |
-| [`renewal-verifier/workflow.yaml`](renewal-verifier/workflow.yaml) | CRE staging and production workflow definitions |
-| [`project.yaml`](project.yaml) | Sepolia RPC configuration for CRE |
-| [`renewal-verifier/contracts/AvowDecisionReceiver.ts`](renewal-verifier/contracts/AvowDecisionReceiver.ts) | Typed CRE EVM reads and report generation |
-| [`contracts/src/AvowDecisionReceiver.sol`](contracts/src/AvowDecisionReceiver.sol) | Validates the Chainlink forwarder and stores append-only decisions |
+| [`renewal-verifier/main.ts`](renewal-verifier/main.ts) | Trigger, EVM read, consensus HTTP, policy evaluation and report write |
+| [`renewal-verifier/workflow.yaml`](renewal-verifier/workflow.yaml) | CRE workflow targets |
+| [`project.yaml`](project.yaml) | Sepolia configuration |
+| [`renewal-verifier/contracts/AvowDecisionReceiver.ts`](renewal-verifier/contracts/AvowDecisionReceiver.ts) | Typed reads and report encoding |
+| [`contracts/src/AvowDecisionReceiver.sol`](contracts/src/AvowDecisionReceiver.sol) | Forwarder validation and append-only decision storage |
 
-The canonical demonstration was run with the official CRE CLI in simulation mode and `--broadcast`. It produced a successful Sepolia transaction. It is **not** represented as a continuously deployed CRE workflow.
+The canonical workflow was compiled and executed with the official CRE CLI using simulation with `--broadcast`. It successfully wrote to Sepolia. It is not represented as a continuously deployed, multi-tenant CRE service.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  A[Renewal state\nSepolia] --> C[Chainlink CRE]
-  B[Delivery evidence\nResend] --> C
-  C --> D[Decision receiver\nBLOCK or EXECUTE]
-  D --> E[Settlement escrow]
-  E --> F{Release allowed?}
+  A[Renewal state] --> C[Chainlink CRE]
+  B[Provider evidence] --> C
+  C --> D[Onchain decision]
+  D --> E[Escrow V2]
+  E --> F{Settle or hold}
 ```
 
-The interface is an operations console for merchants and compliance teams. A business integrates its renewal state, notice provider, policy configuration, and settlement contract once; Avow evaluates future renewals automatically. The current prototype includes one configured demonstration rather than public self-service provisioning.
+### Enforcement lifecycle
+
+| Stage | Action |
+| --- | --- |
+| Propose | A billing system submits the new amount and customer-state version |
+| Verify | Avow retrieves provider evidence and current consent state |
+| Evaluate | CRE applies the configured control and records the result |
+| Enforce | Escrow releases only under a fresh `EXECUTE` decision for the current state |
+
+If the customer cancels or changes approval after evaluation, Escrow V2 rejects the stale authorization and requires a new CRE decision.
+
+## Intended adopters
+
+- subscription platforms validating renewals or price changes;
+- onchain memberships requiring fresh authorization;
+- marketplaces with recurring seller charges; and
+- payment protocols that need auditable pre-settlement controls.
+
+A production adopter connects a renewal source, notice provider, consent state and settlement contract. End customers interact with the adopter’s normal product flow; they do not operate Avow’s reference console.
 
 ## Run locally
 
@@ -69,14 +110,16 @@ Requirements:
 - Bun 1+
 - Chainlink CRE CLI 1.39+
 - a Sepolia RPC endpoint
-- a test-only Sepolia private key only when broadcasting or deploying
+- a test-only Sepolia key only for deployment or broadcast
+
+Install and run the application tests:
 
 ```bash
 npm ci
 npm test
 ```
 
-Run the workflow policy tests and typecheck:
+Run the CRE policy tests and typecheck:
 
 ```bash
 cd renewal-verifier
@@ -85,7 +128,7 @@ bun test
 bun run typecheck
 ```
 
-Simulate the canonical CRE workflow without broadcasting:
+Simulate the workflow without broadcasting:
 
 ```bash
 cre workflow simulate renewal-verifier \
@@ -93,81 +136,67 @@ cre workflow simulate renewal-verifier \
   --target staging-settings
 ```
 
-To broadcast, add `--broadcast`. Use only a test-only Sepolia key. Never commit it.
-
-## Environment
-
-Copy `.env.example` to the environment used by the relevant service. Vercel holds the production Resend values; `contracts/.env` is local-only and ignored.
-
-| Variable | Used by | Purpose |
-| --- | --- | --- |
-| `RESEND_API_KEY` | Vercel APIs | Retrieves the provider notice record |
-| `AVOW_NOTICE_RECIPIENT` | Vercel APIs | Demo recipient; never returned in plaintext |
-| `AVOW_DELIVERY_OBSERVED_AT` | Vercel APIs | Fixed first-observed delivery time for deterministic evidence |
-| `AVOW_ADMIN_SECRET` | Notice endpoint | Protects demo notice creation |
-| `SEPOLIA_RPC_URL` | Status API | Optional private RPC override |
-| `CRE_ETH_PRIVATE_KEY` | Local CRE/deployment | Test-only key for Sepolia writes |
-
-## Deployed contracts
-
-| Component | Address |
-| --- | --- |
-| Decision receiver | [`0x904f…e98c`](https://sepolia.etherscan.io/address/0x904f247794a68f83ec90f441718b88f67d99e98c) |
-| Renewal escrow V2 | [`0x762c…cd9b`](https://sepolia.etherscan.io/address/0x762c2d0a1569e14fa751a860580cabce8264cd9b) |
-| Chainlink mock forwarder | [`0x15fC…9F88`](https://sepolia.etherscan.io/address/0x15fC6ae953E024d975e77382eEeC56A9101f9F88) |
-
-Deployment receipts are committed under [`contracts/deployments`](contracts/deployments).
-
-## Policy scope
-
-The demo policy checks four conditions:
-
-- cancellation blocks renewal;
-- delivery must be provider-verified;
-- notice must satisfy the configured seven-day merchant threshold; and
-- a changed price requires approval for that exact amount under the configured control.
-
-The `UK-SUB-2026.1` string is a prototype policy identifier. It does not mean that the implementation is a definitive expression of UK law. UK subscription-contract rules require prescribed reminder information and reasonable timing, but deployment-specific legal requirements must be configured and reviewed by qualified counsel. See [`docs/POLICY.md`](docs/POLICY.md).
-
-## Security and limitations
-
-- The receiver accepts reports only through the configured Chainlink mock forwarder.
-- Provider evidence commits to the recipient with SHA-256; the email address is not exposed by the public status API.
-- Evidence hashes are single-use in the receiver.
-- The status API fails closed when any canonical proof element disagrees.
-- The escrow contains test ETH only; no production funds or stablecoins are used.
-- This release demonstrates one canonical `BLOCK` path.
-- Enforcement V2 rejects future or expired authorizations, cancellations, and approval updates made after evaluation. The configured authorization lifetime is 24 hours.
-- Contracts have not undergone a professional security audit.
-
-See [`SECURITY.md`](SECURITY.md) and [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) before extending the prototype.
+Add `--broadcast` only when intentionally writing with a test-only Sepolia key.
 
 ## Tests
 
-The repository includes 20 Node tests, one contract compilation test, and 7 workflow policy tests covering:
+The repository contains:
 
-- evidence scenarios and unsupported input;
-- Resend record validation and idempotent notice creation;
-- canonical status assembly and fail-closed mismatches;
-- funded escrow enforcement state;
-- the complete first-time product journey;
-- cancellation, late notice, unchanged renewal, price increase and exact-price approval; and
-- provider-backed evidence schema validation.
+- **22 Node tests** covering evidence APIs, provider records, canonical proof assembly, fail-closed enforcement, product framing and Escrow V2 authorization guards;
+- **7 CRE policy tests** covering cancellation, missing or late notice, unchanged renewal, price changes, exact-price approval and provider-backed evidence validation; and
+- a Solidity compilation test for Escrow V2’s authorization surface.
 
-The live contracts and transaction receipts provide integration evidence, but source-level smart-contract unit tests should be added before production use.
+```bash
+npm test
+cd renewal-verifier && bun test && bun run typecheck
+cd ../contracts && node --test tests/escrow-v2.test.mjs
+```
+
+## Deployed components
+
+| Component | Sepolia address |
+| --- | --- |
+| Decision receiver | [`0x904f…e98c`](https://sepolia.etherscan.io/address/0x904f247794a68f83ec90f441718b88f67d99e98c) |
+| Enforcement escrow V2 | [`0x762c…cd9b`](https://sepolia.etherscan.io/address/0x762c2d0a1569e14fa751a860580cabce8264cd9b) |
+| Chainlink mock forwarder | [`0x15fC…9F88`](https://sepolia.etherscan.io/address/0x15fC6ae953E024d975e77382eEeC56A9101f9F88) |
+
+Deployment records are committed under [`contracts/deployments`](contracts/deployments).
+
+## Security model
+
+- The receiver accepts reports only through the configured Chainlink forwarder.
+- Provider evidence commits to the recipient with SHA-256; the email address is not exposed publicly.
+- Evidence hashes are single-use in the decision receiver.
+- The canonical-status API fails closed when proof elements disagree.
+- Escrow V2 checks decision age and customer-state freshness at settlement time.
+- The public notice endpoint is protected by an administrator secret.
+- Only test ETH is used; no production funds or stablecoins are represented.
+- The contracts have not undergone a professional security audit.
+
+Read [`SECURITY.md`](SECURITY.md) and [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) before extending the prototype.
+
+## Policy boundary
+
+The demonstration control requires verified notice, a configured seven-day notice threshold, current customer state and exact-price approval when the amount changes. `UK-SUB-2026.1` is a prototype policy identifier—not a definitive expression of UK law.
+
+Production rules must be selected for the applicable contract, jurisdiction and risk model with qualified legal review. See [`docs/POLICY.md`](docs/POLICY.md).
 
 ## Repository map
 
 ```text
-api/                  Vercel evidence, notice and canonical-status endpoints
-contracts/            Solidity receiver, escrow, deployment and compile scripts
-lib/                  Provider evidence and proof assembly
+api/                  Evidence, notice and canonical-status endpoints
+contracts/            Solidity receiver, escrow and deployment scripts
+docs/                 Chainlink, policy and threat-model documentation
+lib/                  Provider-evidence and proof-assembly modules
 renewal-verifier/     Chainlink CRE workflow and deterministic policy
-tests/                API, evidence, status and product-flow tests
-index.html            Operations console
+tests/                API, evidence, product and enforcement tests
+index.html            Public product and verified-reference interface
 ```
+
+## Current scope
+
+Avow proves a complete reference enforcement loop. It does not yet provide self-serve tenant onboarding, production credential management, jurisdiction-specific policy packages or audited production payment rails. Those are explicit next steps—not hidden behind demo UI.
 
 ## License
 
 MIT. See [`LICENSE`](LICENSE).
-
