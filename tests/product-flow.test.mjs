@@ -4,36 +4,60 @@ import { readFile } from 'node:fs/promises'
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8')
 
-test('presents a complete renewal review journey', () => {
+test('opens with the product rather than a stranger-looking renewal', () => {
   for (const phrase of [
-    'Inspect decision',
-    'Verify canonical proof',
-    'Avow made this decision automatically.',
-    'Fresh approval is required.',
-    'View verification',
-  ]) assert.ok(html.includes(phrase), `Missing product step: ${phrase}`)
+    'Recurring payments should prove permission.',
+    'Avow is a verification and enforcement layer',
+    'No valid permission.',
+    'Explore verified demo',
+    'Built with Chainlink CRE',
+  ]) assert.ok(html.includes(phrase), `Missing product framing: ${phrase}`)
+  assert.match(html, /<section class="screen active" id="product">/)
+  assert.match(html, /<section class="screen" id="review">/)
 })
 
-test('explains the post-setup business experience honestly', () => {
+test('states who uses Avow and where it sits', () => {
   for (const phrase of [
-    'Connected',
-    'How a business connects',
-    'Connect once. Avow evaluates renewals automatically.',
-    'does not yet provide public self-service provisioning',
-  ]) assert.ok(html.includes(phrase), `Missing integration disclosure: ${phrase}`)
+    'Subscription platforms',
+    'Onchain memberships',
+    'Marketplaces',
+    'Renewal proposed',
+    'Evidence verified',
+    'CRE evaluates',
+    'Settlement obeys',
+  ]) assert.ok(html.includes(phrase), `Missing product concept: ${phrase}`)
 })
 
-test('gives first-time visitors a direct demo path', () => {
+test('labels the fixed case as a reference demo rather than visitor data', () => {
   for (const phrase of [
-    'Demo guide',
-    'See Avow enforce a renewal',
-    'Inspect the blocked decision',
-    'Verify the live control',
-    'Follow the proof',
-    'Start with the decision',
-  ]) assert.ok(html.includes(phrase), `Missing guide step: ${phrase}`)
-  assert.match(html, /\$\('startGuide'\)\.onclick/)
-  assert.match(html, /e\.key===['"]Escape['"]/)
+    'Verified reference demo.',
+    'one fixed test renewal',
+    'it is not your subscription',
+    'single disclosed test case—not visitor data',
+  ]) assert.ok(html.includes(phrase), `Missing demo disclosure: ${phrase}`)
+  assert.ok(!html.includes('Northstar'), 'Fixture merchant must not appear publicly')
+})
+
+test('does not expose fake self-serve product actions', () => {
+  for (const phrase of [
+    'Save local draft',
+    'Prepare integration',
+    'Create renewal',
+    'Connect wallet',
+    'Run live verification',
+  ]) assert.ok(!html.includes(phrase), `Misleading public action remains: ${phrase}`)
+})
+
+test('explains the real developer integration and prototype boundary', () => {
+  for (const phrase of [
+    'The integration boundary',
+    'Renewal source',
+    'Notice provider',
+    'Consent state',
+    'Settlement contract',
+    'end customers do not operate this console',
+    'does not claim self-serve account provisioning',
+  ]) assert.ok(html.includes(phrase), `Missing integration truth: ${phrase}`)
 })
 
 test('uses canonical status and fails closed on inconsistent enforcement', () => {
@@ -49,7 +73,7 @@ test('contains clean Etherscan URL templates', () => {
   assert.doesNotMatch(html, /\[https:\/\/sepolia\.etherscan/)
 })
 
-test('does not misrepresent the verification button as a new CRE execution', () => {
-  assert.ok(html.includes('Checks the CRE receipt and funded escrow live.'))
-  assert.ok(html.includes('Live canonical record'))
+test('describes proof inspection without claiming to execute a new CRE run', () => {
+  assert.ok(html.includes('Inspect live proof'))
+  assert.ok(html.includes('Reads the existing provider evidence, CRE receipt and funded escrow.'))
 })
